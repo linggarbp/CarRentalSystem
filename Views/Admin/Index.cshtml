@@ -1,0 +1,105 @@
+﻿@{
+    ViewData["Title"] = "Admin Dashboard";
+}
+
+<h2>@ViewData["Title"]</h2>
+
+<div class="row">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary mb-3">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>@ViewBag.TotalCars</h4>
+                        <p class="card-text">Total Cars</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-car fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card text-white bg-success mb-3">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>@ViewBag.AvailableCars</h4>
+                        <p class="card-text">Available Cars</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-check-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card text-white bg-warning mb-3">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>@ViewBag.RentedCars</h4>
+                        <p class="card-text">Rented Cars</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-key fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card text-white bg-info mb-3">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>@ViewBag.ActiveRentals</h4>
+                        <p class="card-text">Active Rentals</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-clock fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <a asp-controller="Car" asp-action="Create" class="btn btn-primary mb-2 d-block">
+                    <i class="fas fa-plus"></i> Add New Car
+                </a>
+                <a asp-controller="Car" asp-action="Index" class="btn btn-secondary mb-2 d-block">
+                    <i class="fas fa-list"></i> Manage Cars
+                </a>
+                <a asp-action="AllRentals" class="btn btn-info d-block">
+                    <i class="fas fa-history"></i> View All Rentals
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>System Statistics</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Total Rentals:</strong> @(ViewBag.ActiveRentals + ViewBag.CompletedRentals)</p>
+                <p><strong>Completed Rentals:</strong> @ViewBag.CompletedRentals</p>
+                <p><strong>System Status:</strong> <span class="badge bg-success">Online</span></p>
+            </div>
+        </div>
+    </div>
+</div>

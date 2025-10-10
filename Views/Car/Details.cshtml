@@ -1,0 +1,85 @@
+﻿@model CarRentalSystem.Models.Car
+@{
+    ViewData["Title"] = "Car Details";
+}
+
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header">
+                <h3>@ViewData["Title"] - @Model.Brand @Model.Model</h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        @if (!string.IsNullOrEmpty(Model.ImageUrl))
+                        {
+                            <img src="@Model.ImageUrl" alt="@Model.Brand @Model.Model"
+                                 class="img-fluid rounded" style="max-height: 300px; object-fit: cover;">
+                        }
+                        else
+                        {
+                            <div class="bg-light d-flex align-items-center justify-content-center rounded"
+                                 style="height: 200px;">
+                                <span class="text-muted">No Image Available</span>
+                            </div>
+                        }
+                    </div>
+                    <div class="col-md-8">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th width="30%">Brand:</th>
+                                <td>@Model.Brand</td>
+                            </tr>
+                            <tr>
+                                <th>Model:</th>
+                                <td>@Model.Model</td>
+                            </tr>
+                            <tr>
+                                <th>Year:</th>
+                                <td>@Model.Year</td>
+                            </tr>
+                            <tr>
+                                <th>License Plate:</th>
+                                <td>@Model.LicensePlate</td>
+                            </tr>
+                            <tr>
+                                <th>Price per Day:</th>
+                                <td><strong>$@Model.PricePerDay</strong></td>
+                            </tr>
+                            <tr>
+                                <th>Status:</th>
+                                <td>
+                                    @if (Model.Status == CarRentalSystem.Models.CarStatus.Available)
+                                    {
+                                        <span class="badge bg-success">Available</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning">Rented</span>
+                                    }
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Created Date:</th>
+                                <td>@Model.CreatedDate.ToString("MMM dd, yyyy")</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="form-group mt-4">
+                    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">
+                        <i class="fas fa-edit"></i> Edit
+                    </a>
+                    <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Delete
+                    </a>
+                    <a asp-action="Index" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to List
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

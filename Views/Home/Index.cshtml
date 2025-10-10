@@ -1,0 +1,61 @@
+﻿@model IEnumerable<CarRentalSystem.Models.Car>
+@{
+    ViewData["Title"] = "Available Cars";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Welcome to Car Rental System</h1>
+    <p>Find and rent your perfect car today!</p>
+</div>
+
+@if (Model != null && Model.Any())
+{
+    <div class="row">
+        @foreach (var car in Model)
+        {
+            <div class="col-md-4 mb-4">
+                <div class="card">
+                    @if (!string.IsNullOrEmpty(car.ImageUrl))
+                    {
+                        <img src="@car.ImageUrl" class="card-img-top" alt="@car.Brand @car.Model" style="height: 200px; object-fit: cover;">
+                    }
+                    else
+                    {
+                        <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                            <span class="text-muted">No Image</span>
+                        </div>
+                    }
+
+                    <div class="card-body">
+                        <h5 class="card-title">@car.Brand @car.Model</h5>
+                        <p class="card-text">
+                            <strong>Year:</strong> @car.Year<br>
+                            <strong>License Plate:</strong> @car.LicensePlate<br>
+                            <strong>Price per Day:</strong> $@car.PricePerDay
+                        </p>
+
+                        @if (User.IsInRole("User"))
+                        {
+                            <a asp-controller="Rental" asp-action="RentCar" asp-route-carId="@car.Id" class="btn btn-primary">
+                                Rent Now
+                            </a>
+                        }
+                        else if (!User.Identity!.IsAuthenticated)
+                        {
+                            <a asp-controller="Account" asp-action="Login" class="btn btn-primary">
+                                Login to Rent
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div class="alert alert-info">
+        <h4>No cars available</h4>
+        <p>Currently, there are no cars available for rent. Please check back later.</p>
+    </div>
+}

@@ -1,0 +1,121 @@
+﻿@model CarRentalSystem.ViewModels.RentCarViewModel
+@{
+    ViewData["Title"] = "Rent Car";
+}
+
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header">
+                <h3>Rent Car - @Model.CarInfo</h3>
+            </div>
+            <div class="card-body">
+                <form asp-action="RentCar" method="post" id="rentForm">
+                    <input asp-for="CarId" type="hidden" />
+                    <input asp-for="CarInfo" type="hidden" />
+                    <input asp-for="PricePerDay" type="hidden" />
+                    
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                    
+                    <div class="alert alert-info">
+                        <strong>Car Details:</strong> @Model.CarInfo<br>
+                        <strong>Price per Day:</strong> $@Model.PricePerDay
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label asp-for="StartDate" class="form-label"></label>
+                                <input asp-for="StartDate" class="form-control" type="date" id="startDate" />
+                                <span asp-validation-for="StartDate" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label asp-for="EndDate" class="form-label"></label>
+                                <input asp-for="EndDate" class="form-control" type="date" id="endDate" />
+                                <span asp-validation-for="EndDate" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mb-3" id="priceCalculation" style="display: none;">
+                        <div class="card-body">
+                            <h5>Rental Summary</h5>
+                            <p><strong>Total Days:</strong> <span id="totalDays">0</span> days</p>
+                            <p><strong>Total Price:</strong> $<span id="totalPrice">0.00</span></p>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary" id="rentButton">
+                            <i class="fas fa-car"></i> Rent This Car
+                        </button>
+                        <a asp-controller="Home" asp-action="Index" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Cars
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        $(document).ready(function() {
+            // Set minimum date to tomorrow
+            var tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            var tomorrowString = tomorrow.toISOString().split('T')[0];
+            $('#startDate').attr('min', tomorrowString);
+            
+            // Calculate price when dates change
+            $('#startDate, #endDate').change(function() {
+                calculatePrice();
+            });
+            
+            function calculatePrice() {
+                var startDate = $('#startDate').val();
+                var endDate = $('#endDate').val();
+                var carId = @Model.CarId;
+                
+                if (startDate && endDate && startDate < endDate) {
+                    $.ajax({
+                        url: '@Url.Action("CalculatePrice", "Rental")',
+                        type: 'POST',
+                        data: {
+                            carId: carId,
+                            startDate: startDate,
+                            endDate: endDate
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                $('#totalDays').text(response.totalDays);
+                                $('#totalPrice').text(response.totalPrice.toFixed(2));
+                                $('#priceCalculation').show();
+                            }
+                        }
+                    });
+                } else {
+                    $('#priceCalculation').hide();
+                }
+            }
+            
+            // Auto-set end date when start date is selected
+            $('#startDate').change(function() {
+                var startDate = new Date($(this).val());
+                var endDate = new Date(startDate);
+                endDate.setDate(endDate.getDate() + 1);
+                var endDateString = endDate.toISOString().split('T')[0];
+                
+                $('#endDate').attr('min', endDateString);
+                if (!$('#endDate').val() || $('#endDate').val() <= $(this).val()) {
+                    $('#endDate').val(endDateString);
+                    calculatePrice();
+                }
+            });
+        });
+    </script>
+}

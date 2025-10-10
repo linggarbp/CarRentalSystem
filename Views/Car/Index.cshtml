@@ -1,0 +1,118 @@
+﻿@model IEnumerable<CarRentalSystem.Models.Car>
+@{
+    ViewData["Title"] = "Manage Cars";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>@ViewData["Title"]</h2>
+    <a asp-action="Create" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Add New Car
+    </a>
+</div>
+
+<!-- Debug Info -->
+<div class="alert alert-info">
+    <small>
+        <strong>Debug Info:</strong><br>
+        Total Cars: @Model.Count()<br>
+        User: @User.Identity.Name<br>
+        Is Admin: @User.IsInRole("Admin")
+    </small>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="table-responsive">
+    <table class="table table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>Image</th>
+                <th>Brand</th>
+                <th>Model</th>
+                <th>Year</th>
+                <th>License Plate</th>
+                <th>Price/Day</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var car in Model)
+            {
+                <tr>
+                    <td><small>@car.Id</small></td>
+                    <td>
+                        @if (!string.IsNullOrEmpty(car.ImageUrl))
+                        {
+                            <img src="@car.ImageUrl" alt="@car.Brand @car.Model"
+                                 class="img-thumbnail" style="width: 60px; height: 60px; object-fit: cover;">
+                        }
+                        else
+                        {
+                            <div class="bg-light d-flex align-items-center justify-content-center"
+                                 style="width: 60px; height: 60px;">
+                                <small class="text-muted">No Image</small>
+                            </div>
+                        }
+                    </td>
+                    <td>@car.Brand</td>
+                    <td>@car.Model</td>
+                    <td>@car.Year</td>
+                    <td>@car.LicensePlate</td>
+                    <td>$@car.PricePerDay</td>
+                    <td>
+                        @if (car.Status == CarRentalSystem.Models.CarStatus.Available)
+                        {
+                            <span class="badge bg-success">Available</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-warning">Rented</span>
+                        }
+                    </td>
+                    <td>
+                        <div class="btn-group" role="group">
+                            <a asp-action="Details" asp-route-id="@car.Id"
+                               class="btn btn-info btn-sm" title="Details">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a asp-action="Edit" asp-route-id="@car.Id"
+                               class="btn btn-warning btn-sm" title="Edit"
+                               onclick="console.log('Edit clicked for car ID: @car.Id')">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a asp-action="Delete" asp-route-id="@car.Id"
+                               class="btn btn-danger btn-sm" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="text-center py-5">
+        <h4>No cars found</h4>
+        <p class="text-muted">Start by adding your first car to the system.</p>
+        <a asp-action="Create" class="btn btn-primary">Add First Car</a>
+    </div>
+}
