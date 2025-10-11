@@ -48,3 +48,6 @@ GROUP BY Status;
 SELECT Id, Email, FirstName, LastName FROM AspNetUsers WHERE Email = 'admin@carrental.com';
 
 4. Build & Run
+Credential admin
+Username = admin@carrental.com
+Password = Admin123!
