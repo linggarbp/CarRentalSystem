@@ -3,7 +3,162 @@
     ViewData["Title"] = "All Rentals";
 }
 
-<h2>@ViewData["Title"]</h2>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>@ViewData["Title"]</h2>
+
+    <!-- Export Buttons -->
+    <div class="btn-group" role="group">
+        <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown">
+            <i class="fas fa-download"></i> Export Report
+        </button>
+        <ul class="dropdown-menu">
+            <li>
+                <a class="dropdown-item" asp-action="ExportRentalsToExcel">
+                    <i class="fas fa-file-excel text-success"></i> Export to Excel
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item" asp-action="RentalsReportHtml" target="_blank">
+                    <i class="fas fa-file-pdf text-danger"></i> Print/PDF Report
+                </a>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+                <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#filterModal">
+                    <i class="fas fa-filter"></i> Export with Filters
+                </a>
+            </li>
+        </ul>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- FILTER SECTION -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#filterSection">
+                <i class="fas fa-filter"></i> Filters & Sorting
+            </button>
+        </h5>
+    </div>
+    <div id="filterSection" class="collapse show">
+        <div class="card-body">
+            <form method="get" asp-action="AllRentals">
+                <div class="row">
+                    <!-- Sorting -->
+                    <div class="col-md-2">
+                        <label class="form-label">Sort By</label>
+                        <select name="sortBy" class="form-select">
+                            <option value="date" selected="@(ViewBag.SortBy == "date")">Created Date</option>
+                            <option value="user" selected="@(ViewBag.SortBy == "user")">User Name</option>
+                            <option value="car" selected="@(ViewBag.SortBy == "car")">Car</option>
+                            <option value="startdate" selected="@(ViewBag.SortBy == "startdate")">Start Date</option>
+                            <option value="enddate" selected="@(ViewBag.SortBy == "enddate")">End Date</option>
+                            <option value="price" selected="@(ViewBag.SortBy == "price")">Price</option>
+                            <option value="status" selected="@(ViewBag.SortBy == "status")">Status</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Order</label>
+                        <select name="sortOrder" class="form-select">
+                            <option value="desc" selected="@(ViewBag.SortOrder == "desc")">Descending</option>
+                            <option value="asc" selected="@(ViewBag.SortOrder == "asc")">Ascending</option>
+                        </select>
+                    </div>
+
+                    <!-- Status Filter -->
+                    <div class="col-md-2">
+                        <label class="form-label">Status</label>
+                        <select name="statusFilter" class="form-select">
+                            <option value="">All Status</option>
+                            <option value="Active" selected="@(ViewBag.StatusFilter == "Active")">Active</option>
+                            <option value="Completed" selected="@(ViewBag.StatusFilter == "Completed")">Completed</option>
+                        </select>
+                    </div>
+
+                    <!-- Date Range -->
+                    <div class="col-md-2">
+                        <label class="form-label">Start Date</label>
+                        <input type="date" name="startDate" class="form-control" value="@ViewBag.StartDate">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">End Date</label>
+                        <input type="date" name="endDate" class="form-control" value="@ViewBag.EndDate">
+                    </div>
+
+                    <!-- User Search -->
+                    <div class="col-md-2">
+                        <label class="form-label">User Search</label>
+                        <input type="text" name="searchUser" class="form-control" placeholder="Name/Email" value="@ViewBag.SearchUser">
+                    </div>
+                </div>
+
+                <div class="row mt-3">
+                    <div class="col-md-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search"></i> Apply Filters
+                        </button>
+                        <a asp-action="AllRentals" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Clear Filters
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h5>Total Rentals</h5>
+                <h3>@Model.Count()</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5>Active Rentals</h5>
+                <h3>@Model.Count(r => r.Status == CarRentalSystem.Models.RentalStatus.Active)</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h5>Completed</h5>
+                <h3>@Model.Count(r => r.Status == CarRentalSystem.Models.RentalStatus.Completed)</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <h5>Total Revenue</h5>
+                <h3>Rp @Model.Where(r => r.Status == CarRentalSystem.Models.RentalStatus.Completed).Sum(r => r.TotalPrice).ToString("N0")</h3>
+            </div>
+        </div>
+    </div>
+</div>
 
 @if (Model.Any())
 {
@@ -11,56 +166,182 @@
         <table class="table table-striped table-hover">
             <thead class="table-dark">
                 <tr>
-                    <th>User</th>
-                    <th>Car</th>
-                    <th>Start Date</th>
-                    <th>End Date</th>
-                    <th>Days</th>
-                    <th>Total Price</th>
-                    <th>Status</th>
-                    <th>Created</th>
+                    <th>
+                        <a asp-action="AllRentals" asp-route-sortBy="date"
+                           asp-route-sortOrder="@(ViewBag.SortBy == "date" && ViewBag.SortOrder == "asc" ? "desc" : "asc")"
+                           asp-route-statusFilter="@ViewBag.StatusFilter"
+                           asp-route-startDate="@ViewBag.StartDate"
+                           asp-route-endDate="@ViewBag.EndDate"
+                           asp-route-searchUser="@ViewBag.SearchUser"
+                           class="text-white text-decoration-none">
+                            ID @if(ViewBag.SortBy == "date") {
+                            <i class="fas fa-sort-@(ViewBag.SortOrder == "asc" ? "up" : "down")"></i>
+                        }
+                    </a>
+                </th>
+                <th>
+                    <a asp-action="AllRentals" asp-route-sortBy="user"
+                       asp-route-sortOrder="@(ViewBag.SortBy == "user" && ViewBag.SortOrder == "asc" ? "desc" : "asc")"
+                       asp-route-statusFilter="@ViewBag.StatusFilter"
+                       asp-route-startDate="@ViewBag.StartDate"
+                       asp-route-endDate="@ViewBag.EndDate"
+                       asp-route-searchUser="@ViewBag.SearchUser"
+                       class="text-white text-decoration-none">
+                        User @if(ViewBag.SortBy == "user") {
+                        <i class="fas fa-sort-@(ViewBag.SortOrder == "asc" ? "up" : "down")"></i>
+                                                }
+                    </a>
+                </th>
+                <th>
+                    <a asp-action="AllRentals" asp-route-sortBy="car"
+                       asp-route-sortOrder="@(ViewBag.SortBy == "car" && ViewBag.SortOrder == "asc" ? "desc" : "asc")"
+                       asp-route-statusFilter="@ViewBag.StatusFilter"
+                       asp-route-startDate="@ViewBag.StartDate"
+                       asp-route-endDate="@ViewBag.EndDate"
+                       asp-route-searchUser="@ViewBag.SearchUser"
+                       class="text-white text-decoration-none">
+                        Car @if(ViewBag.SortBy == "car") {
+                        <i class="fas fa-sort-@(ViewBag.SortOrder == "asc" ? "up" : "down")"></i>
+                                                }
+                    </a>
+                </th>
+                <th>
+                    <a asp-action="AllRentals" asp-route-sortBy="startdate"
+                       asp-route-sortOrder="@(ViewBag.SortBy == "startdate" && ViewBag.SortOrder == "asc" ? "desc" : "asc")"
+                       asp-route-statusFilter="@ViewBag.StatusFilter"
+                       asp-route-startDate="@ViewBag.StartDate"
+                       asp-route-endDate="@ViewBag.EndDate"
+                       asp-route-searchUser="@ViewBag.SearchUser"
+                       class="text-white text-decoration-none">
+                        Start Date @if(ViewBag.SortBy == "startdate") {
+                        <i class="fas fa-sort-@(ViewBag.SortOrder == "asc" ? "up" : "down")"></i>
+                                                }
+                    </a>
+                </th>
+                <th>End Date</th>
+                <th>Days</th>
+                <th>
+                    <a asp-action="AllRentals" asp-route-sortBy="price"
+                       asp-route-sortOrder="@(ViewBag.SortBy == "price" && ViewBag.SortOrder == "asc" ? "desc" : "asc")"
+                       asp-route-statusFilter="@ViewBag.StatusFilter"
+                       asp-route-startDate="@ViewBag.StartDate"
+                       asp-route-endDate="@ViewBag.EndDate"
+                       asp-route-searchUser="@ViewBag.SearchUser"
+                       class="text-white text-decoration-none">
+                        Total Price @if(ViewBag.SortBy == "price") {
+                        <i class="fas fa-sort-@(ViewBag.SortOrder == "asc" ? "up" : "down")"></i>
+                                                }
+                    </a>
+                </th>
+                <th>
+                    <a asp-action="AllRentals" asp-route-sortBy="status"
+                       asp-route-sortOrder="@(ViewBag.SortBy == "status" && ViewBag.SortOrder == "asc" ? "desc" : "asc")"
+                       asp-route-statusFilter="@ViewBag.StatusFilter"
+                       asp-route-startDate="@ViewBag.StartDate"
+                       asp-route-endDate="@ViewBag.EndDate"
+                       asp-route-searchUser="@ViewBag.SearchUser"
+                       class="text-white text-decoration-none">
+                        Status @if(ViewBag.SortBy == "status") {
+                        <i class="fas fa-sort-@(ViewBag.SortOrder == "asc" ? "up" : "down")"></i>
+                                                }
+                    </a>
+                </th>
+                <th>Created</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var rental in Model)
+            {
+                <tr>
+                    <td>@rental.Id</td>
+                    <td>
+                        <strong>@rental.User.FullName</strong><br>
+                        <small class="text-muted">@rental.User.Email</small>
+                    </td>
+                    <td>
+                        <strong>@rental.Car.Brand @rental.Car.Model</strong><br>
+                        <small class="text-muted">@rental.Car.LicensePlate</small>
+                    </td>
+                    <td>@rental.StartDate.ToString("MMM dd, yyyy")</td>
+                    <td>@rental.EndDate.ToString("MMM dd, yyyy")</td>
+                    <td>@rental.TotalDays days</td>
+                    <td>Rp @rental.TotalPrice.ToString("N0")</td>
+                    <td>
+                        @if (rental.Status == CarRentalSystem.Models.RentalStatus.Active)
+                        {
+                            <span class="badge bg-warning text-dark">Active</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-success">Completed</span>
+                        }
+                    </td>
+                    <td>@rental.CreatedDate.ToString("MMM dd, yyyy")</td>
                 </tr>
-            </thead>
-            <tbody>
-                @foreach (var rental in Model)
-                {
-                    <tr>
-                        <td>
-                            <strong>@rental.User.FullName</strong><br>
-                            <small class="text-muted">@rental.User.Email</small>
-                        </td>
-                        <td>
-                            <strong>@rental.Car.Brand @rental.Car.Model</strong><br>
-                            <small class="text-muted">@rental.Car.LicensePlate</small>
-                        </td>
-                        <td>@rental.StartDate.ToString("MMM dd, yyyy")</td>
-                        <td>@rental.EndDate.ToString("MMM dd, yyyy")</td>
-                        <td>@rental.TotalDays days</td>
-                        <td>$@rental.TotalPrice</td>
-                        <td>
-                            @if (rental.Status == CarRentalSystem.Models.RentalStatus.Active)
-                            {
-                                <span class="badge bg-warning text-dark">Active</span>
-                            }
-                            else
-                            {
-                                <span class="badge bg-success">Completed</span>
-                            }
-                        </td>
-                        <td>@rental.CreatedDate.ToString("MMM dd, yyyy")</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
+            }
+        </tbody>
+    </table>
+</div>
 }
 else
 {
     <div class="text-center py-5">
         <h4>No rentals found</h4>
-        <p class="text-muted">No rental transactions in the system yet.</p>
+        <p class="text-muted">No rental transactions match your current filters.</p>
+        <a asp-action="AllRentals" class="btn btn-primary">Clear Filters</a>
     </div>
 }
+
+<!-- Filter Modal -->
+<div class="modal fade" id="filterModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Export Filtered Report</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="@Url.Action("ExportFilteredRentals")" method="get">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Start Date</label>
+                                <input type="date" name="startDate" class="form-control">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">End Date</label>
+                                <input type="date" name="endDate" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <select name="status" class="form-select">
+                            <option value="">All Status</option>
+                            <option value="Active">Active Only</option>
+                            <option value="Completed">Completed Only</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Format</label>
+                        <select name="format" class="form-select">
+                            <option value="excel">Excel (.xlsx)</option>
+                            <option value="pdf">PDF (.pdf)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-download"></i> Export Report
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 <div class="mt-3">
     <a asp-action="Index" class="btn btn-secondary">

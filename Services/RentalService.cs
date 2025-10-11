@@ -63,8 +63,11 @@ namespace CarRentalSystem.Services
             if (car == null) return 0;
 
             var totalDays = (endDate - startDate).Days;
-            return car.PricePerDay * totalDays;
+            if (totalDays <= 0) return 0;
+
+            return totalDays * car.PricePerDay;
         }
+
 
         public async Task<IEnumerable<Rental>> GetUserRentalsAsync(string userId)
         {

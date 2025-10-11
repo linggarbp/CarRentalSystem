@@ -10,21 +10,22 @@
                 <h3>@ViewData["Title"]</h3>
             </div>
             <div class="card-body">
-
-                <form method="post" action="/Car/Create">
-                    @Html.AntiForgeryToken()
+                <form asp-action="Create" method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group mb-3">
-                                <label class="form-label">Brand</label>
-                                <input type="text" name="Brand" class="form-control" placeholder="e.g., Toyota" />
+                                <label asp-for="Brand" class="form-label"></label>
+                                <input asp-for="Brand" class="form-control" placeholder="e.g., Toyota" />
+                                <span asp-validation-for="Brand" class="text-danger"></span>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group mb-3">
-                                <label class="form-label">Model</label>
-                                <input type="text" name="Model" class="form-control" placeholder="e.g., Camry" />
+                                <label asp-for="Model" class="form-label"></label>
+                                <input asp-for="Model" class="form-control" placeholder="e.g., Camry" />
+                                <span asp-validation-for="Model" class="text-danger"></span>
                             </div>
                         </div>
                     </div>
@@ -32,16 +33,16 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group mb-3">
-                                <label class="form-label">Year</label>
-                                <input type="number" name="Year" class="form-control"
-                                       min="1900" max="2030" value="2023" />
+                                <label asp-for="Year" class="form-label"></label>
+                                <input asp-for="Year" class="form-control" type="number" min="1900" max="2030" />
+                                <span asp-validation-for="Year" class="text-danger"></span>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group mb-3">
-                                <label class="form-label">License Plate</label>
-                                <input type="text" name="LicensePlate" class="form-control"
-                                       placeholder="e.g., ABC-1234" />
+                                <label asp-for="LicensePlate" class="form-label"></label>
+                                <input asp-for="LicensePlate" class="form-control" placeholder="e.g., ABC-1234" />
+                                <span asp-validation-for="LicensePlate" class="text-danger"></span>
                             </div>
                         </div>
                     </div>
@@ -49,16 +50,27 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group mb-3">
-                                <label class="form-label">Price Per Day ($)</label>
-                                <input type="number" name="PricePerDay" class="form-control"
-                                       step="0.01" min="0.01" placeholder="50.00" />
+                                <label asp-for="PricePerDay" class="form-label"></label>
+                                <div class="input-group">
+                                    <span class="input-group-text">Rp</span>
+                                    <input type="number"
+                                           asp-for="PricePerDay"
+                                           class="form-control"
+                                           step="1000"
+                                           min="50000"
+                                           placeholder="750000"
+                                           oninput="formatPriceInput(this)" />
+                                </div>
+                                <span asp-validation-for="PricePerDay" class="text-danger"></span>
+                                <small class="form-text text-muted">Masukkan angka tanpa titik (contoh: 750000)</small>
                             </div>
                         </div>
+
                         <div class="col-md-6">
                             <div class="form-group mb-3">
-                                <label class="form-label">Image URL (Optional)</label>
-                                <input type="url" name="ImageUrl" class="form-control"
-                                       placeholder="https://example.com/image.jpg" />
+                                <label asp-for="ImageUrl" class="form-label"></label>
+                                <input asp-for="ImageUrl" class="form-control" />
+                                <span asp-validation-for="ImageUrl" class="text-danger"></span>
                             </div>
                         </div>
                     </div>
@@ -67,7 +79,7 @@
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-save"></i> Create Car
                         </button>
-                        <a href="/Car/Index" class="btn btn-secondary">
+                        <a asp-action="Index" class="btn btn-secondary">
                             <i class="fas fa-arrow-left"></i> Back to List
                         </a>
                     </div>
@@ -76,3 +88,9 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

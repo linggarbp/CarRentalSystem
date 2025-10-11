@@ -1,24 +1,26 @@
-using CarRentalSystem.Interfaces;
+using CarRentalSystem.Data;
 using CarRentalSystem.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
-using CarRentalSystem.Data;
 
 namespace CarRentalSystem.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly ICarRepository _carRepository;
+        private readonly ApplicationDbContext _context;
 
-        public HomeController(ICarRepository carRepository)
+        public HomeController(ApplicationDbContext context)
         {
-            _carRepository = carRepository;
+            _context = context;
         }
 
         public async Task<IActionResult> Index()
         {
-            var availableCars = await _carRepository.GetAvailableCarsAsync();
+            var availableCars = await _context.Cars
+                .Where(c => c.Status == CarStatus.Available && !c.IsDeleted)
+                .ToListAsync();
+
             return View(availableCars);
         }
 

@@ -29,7 +29,7 @@ namespace CarRentalSystem.Models
 
         public string? ImageUrl { get; set; }
 
-        // Navigation property
+        // Navigation properties
         public virtual ICollection<Rental> Rentals { get; set; } = new List<Rental>();
     }
 

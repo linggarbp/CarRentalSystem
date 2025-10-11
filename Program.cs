@@ -4,12 +4,26 @@ using CarRentalSystem.Models;
 using CarRentalSystem.Repositories;
 using CarRentalSystem.Services;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews(options =>
+{
+    // Add model binding debugging
+    options.ModelBindingMessageProvider.SetValueMustNotBeNullAccessor(
+        _ => "The field is required.");
+    options.ModelBindingMessageProvider.SetValueMustBeANumberAccessor(
+        _ => "The field must be a number.");
+});
+
+// Configure model validation
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.SuppressModelStateInvalidFilter = false;
+});
 
 // Database
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -41,9 +55,24 @@ builder.Services.ConfigureApplicationCookie(options =>
 // Repository Pattern
 builder.Services.AddScoped<ICarRepository, CarRepository>();
 builder.Services.AddScoped<IRentalRepository, RentalRepository>();
-
+builder.Services.AddScoped<IReportService, ReportService>();
 // Services
 builder.Services.AddScoped<IRentalService, RentalService>();
+
+// Add to Program.cs
+builder.Services.AddHsts(options =>
+{
+    options.Preload = true;
+    options.IncludeSubDomains = true;
+    options.MaxAge = TimeSpan.FromDays(365);
+});
+
+builder.Services.AddHttpsRedirection(options =>
+{
+    options.RedirectStatusCode = StatusCodes.Status308PermanentRedirect;
+    options.HttpsPort = 443;
+});
+
 
 var app = builder.Build();
 

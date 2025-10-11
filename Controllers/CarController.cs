@@ -5,276 +5,233 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace YourProjectName.Controllers
+namespace CarRentalSystem.Controllers
 {
     [Authorize(Roles = "Admin")]
     public class CarController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly ILogger<CarController> _logger;
 
-        public CarController(ApplicationDbContext context)
+        public CarController(ApplicationDbContext context, ILogger<CarController> logger)
         {
             _context = context;
-        }
-
-        // ADD THIS METHOD TO DEBUG DATABASE
-        public async Task<IActionResult> TestDatabase(int id = 1)
-        {
-            try
-            {
-                var car = await _context.Cars.FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted);
-
-                if (car == null)
-                {
-                    return Json(new { success = false, message = $"Car with ID {id} not found" });
-                }
-
-                return Json(new
-                {
-                    success = true,
-                    carData = new
-                    {
-                        car.Id,
-                        car.Brand,
-                        car.Model,
-                        car.Year,
-                        car.LicensePlate,
-                        car.PricePerDay,
-                        car.ImageUrl,
-                        car.Status,
-                        car.IsDeleted,
-                        car.CreatedDate
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, error = ex.Message });
-            }
+            _logger = logger;
         }
 
         // GET: Car
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string sort)
         {
-            var cars = await _context.Cars.Where(c => !c.IsDeleted).ToListAsync();
+            var query = _context.Cars.Where(c => !c.IsDeleted);
+
+            query = sort switch
+            {
+                "oldest" => query.OrderBy(c => c.CreatedDate),
+                "brand" => query.OrderBy(c => c.Brand).ThenBy(c => c.Model),
+                "newest" or _ => query.OrderByDescending(c => c.CreatedDate)
+            };
+
+            var cars = await query.ToListAsync();
             return View(cars);
         }
 
-        // GET: Car/Details/5
+
+        // GET: Car/Details/1
         public async Task<IActionResult> Details(int id)
         {
-            var car = await _context.Cars.FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted);
+            var car = await _context.Cars
+                .FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted);
+
             if (car == null)
             {
-                TempData["Error"] = "Car not found.";
-                return RedirectToAction(nameof(Index));
+                return NotFound();
             }
+
             return View(car);
         }
 
         // GET: Car/Create
         public IActionResult Create()
         {
-            // Initialize empty model to prevent null reference
-            var model = new CarViewModel();
-            return View(model);
+            return View(new CarViewModel());
         }
 
-
-        // POST: Car/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(CarViewModel model)
         {
             try
             {
-                Console.WriteLine("=== CREATE CAR STARTED ===");
+                Console.WriteLine("=== HYBRID CREATE DEBUG ===");
                 Console.WriteLine($"ModelState.IsValid: {ModelState.IsValid}");
 
-                // DEBUG: Print all incoming values
-                Console.WriteLine($"Brand: '{model.Brand}'");
-                Console.WriteLine($"Model: '{model.Model}'");
-                Console.WriteLine($"Year: {model.Year}");
-                Console.WriteLine($"LicensePlate: '{model.LicensePlate}'");
-                Console.WriteLine($"PricePerDay: {model.PricePerDay}");
-                Console.WriteLine($"ImageUrl: '{model.ImageUrl}'");
-                
-                if (!ModelState.IsValid)
+                // If model binding failed, try manual extraction
+                if (model == null ||
+                    (string.IsNullOrEmpty(model.Brand) && string.IsNullOrEmpty(model.Model)))
                 {
-                    Console.WriteLine("=== MODEL VALIDATION ERRORS ===");
-                    foreach (var kvp in ModelState)
+                    Console.WriteLine("Model binding failed, trying manual extraction...");
+
+                    model = new CarViewModel
                     {
-                        Console.WriteLine($"Field: {kvp.Key}");
-                        foreach (var error in kvp.Value.Errors)
-                        {
-                            Console.WriteLine($"  Error: {error.ErrorMessage}");
-                        }
+                        Brand = Request.Form["Brand"].ToString(),
+                        Model = Request.Form["Model"].ToString(),
+                        LicensePlate = Request.Form["LicensePlate"].ToString(),
+                        ImageUrl = Request.Form["ImageUrl"].ToString()
+                    };
+
+                    // Parse numbers manually
+                    if (int.TryParse(Request.Form["Year"], out int year))
+                        model.Year = year;
+
+                    if (decimal.TryParse(Request.Form["PricePerDay"], out decimal price))
+                        model.PricePerDay = price;
+
+                    Console.WriteLine($"Manual extraction - Brand: '{model.Brand}', Model: '{model.Model}'");
+                }
+
+                // Manual validation
+                var errors = new List<string>();
+
+                if (string.IsNullOrWhiteSpace(model.Brand))
+                    errors.Add("Brand is required");
+
+                if (string.IsNullOrWhiteSpace(model.Model))
+                    errors.Add("Model is required");
+
+                if (string.IsNullOrWhiteSpace(model.LicensePlate))
+                    errors.Add("License plate is required");
+
+                if (model.Year < 1900 || model.Year > 2030)
+                    errors.Add("Year must be between 1900 and 2030");
+
+                if (model.PricePerDay <= 0)
+                    errors.Add("Price per day must be greater than 0");
+
+                if (errors.Any())
+                {
+                    foreach (var error in errors)
+                    {
+                        ModelState.AddModelError("", error);
                     }
-
-                    // Set ViewBag for debugging
-                    ViewBag.ValidationErrors = ModelState
-                        .Where(x => x.Value.Errors.Count > 0)
-                        .ToDictionary(
-                            kvp => kvp.Key,
-                            kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray()
-                        );
-
                     return View(model);
                 }
 
-                if (ModelState.IsValid)
+                var car = new Car
                 {
-                    var car = new Car
-                    {
-                        Brand = model.Brand,
-                        Model = model.Model,
-                        Year = model.Year,
-                        LicensePlate = model.LicensePlate,
-                        PricePerDay = model.PricePerDay,
-                        ImageUrl = model.ImageUrl,
-                        Status = CarStatus.Available,
-                        CreatedDate = DateTime.Now,
-                        IsDeleted = false
-                    };
+                    Brand = model.Brand.Trim(),
+                    Model = model.Model.Trim(),
+                    Year = model.Year,
+                    LicensePlate = model.LicensePlate.Trim(),
+                    PricePerDay = model.PricePerDay,
+                    ImageUrl = string.IsNullOrWhiteSpace(model.ImageUrl) ? null : model.ImageUrl.Trim(),
+                    Status = CarStatus.Available
+                };
 
-                    Console.WriteLine($"Adding car: {car.Brand} {car.Model}");
+                Console.WriteLine($"Creating car: {car.Brand} {car.Model}");
 
-                    _context.Cars.Add(car);
-                    var changes = await _context.SaveChangesAsync();
+                _context.Cars.Add(car);
+                await _context.SaveChangesAsync();
 
-                    Console.WriteLine($"SaveChanges returned: {changes}");
-                    Console.WriteLine($"Car ID: {car.Id}");
+                Console.WriteLine($"Car created with ID: {car.Id}");
 
-                    if (changes > 0)
-                    {
-                        TempData["Success"] = $"Car {car.Brand} {car.Model} created successfully!";
-                        return RedirectToAction(nameof(Index));
-                    }
-                    else
-                    {
-                        TempData["Error"] = "No changes were saved to database.";
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("=== MODEL VALIDATION ERRORS ===");
-                    foreach (var error in ModelState.Values.SelectMany(v => v.Errors))
-                    {
-                        Console.WriteLine($"Error: {error.ErrorMessage}");
-                    }
-                }
+                TempData["Success"] = $"Car {car.Brand} {car.Model} created successfully!";
+                return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"CREATE EXCEPTION: {ex.Message}");
-                TempData["Error"] = $"Error: {ex.Message}";
-                return View(model);
+                Console.WriteLine($"Create Exception: {ex.Message}");
+                TempData["Error"] = $"Error creating car: {ex.Message}";
+                return View(model ?? new CarViewModel());
             }
+        }
+
+
+        // GET: Car/Edit/1
+        public async Task<IActionResult> Edit(int id)
+        {
+            var car = await _context.Cars
+                .FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted);
+
+            if (car == null)
+            {
+                return NotFound();
+            }
+
+            var model = new CarViewModel
+            {
+                Id = car.Id,
+                Brand = car.Brand,
+                Model = car.Model,
+                Year = car.Year,
+                LicensePlate = car.LicensePlate,
+                PricePerDay = car.PricePerDay,
+                ImageUrl = car.ImageUrl
+            };
 
             return View(model);
         }
 
-        // GET: Car/Edit/5
-        public async Task<IActionResult> Edit(int id)
-        {
-            try
-            {
-                Console.WriteLine($"=== EDIT GET: ID = {id} ===");
-
-                // Test direct database query
-                var car = await _context.Cars.FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted);
-
-                if (car == null)
-                {
-                    Console.WriteLine($"Car with ID {id} not found");
-                    TempData["Error"] = $"Car with ID {id} not found.";
-                    return RedirectToAction(nameof(Index));
-                }
-
-                // Log all car properties
-                Console.WriteLine($"=== CAR FROM DATABASE ===");
-                Console.WriteLine($"ID: {car.Id}");
-                Console.WriteLine($"Brand: '{car.Brand}'");
-                Console.WriteLine($"Model: '{car.Model}'");
-                Console.WriteLine($"Year: {car.Year}");
-                Console.WriteLine($"LicensePlate: '{car.LicensePlate}'");
-                Console.WriteLine($"PricePerDay: {car.PricePerDay}");
-                Console.WriteLine($"ImageUrl: '{car.ImageUrl}'");
-                Console.WriteLine($"Status: {car.Status}");
-                Console.WriteLine($"IsDeleted: {car.IsDeleted}");
-
-                // Create model step by step
-                var model = new CarViewModel();
-                model.Id = car.Id;
-                model.Brand = car.Brand ?? "";
-                model.Model = car.Model ?? "";
-                model.Year = car.Year;
-                model.LicensePlate = car.LicensePlate ?? "";
-                model.PricePerDay = car.PricePerDay;
-                model.ImageUrl = car.ImageUrl;
-
-                // Log model properties
-                Console.WriteLine($"=== VIEW MODEL CREATED ===");
-                Console.WriteLine($"Model.ID: {model.Id}");
-                Console.WriteLine($"Model.Brand: '{model.Brand}'");
-                Console.WriteLine($"Model.Model: '{model.Model}'");
-                Console.WriteLine($"Model.Year: {model.Year}");
-                Console.WriteLine($"Model.LicensePlate: '{model.LicensePlate}'");
-                Console.WriteLine($"Model.PricePerDay: {model.PricePerDay}");
-                Console.WriteLine($"Model.ImageUrl: '{model.ImageUrl}'");
-
-                return View(model);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Edit GET Exception: {ex.Message}");
-                Console.WriteLine($"Stack: {ex.StackTrace}");
-                TempData["Error"] = $"Error loading car: {ex.Message}";
-                return RedirectToAction(nameof(Index));
-            }
-        }
-
-
-        // POST: Car/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, CarViewModel model)
         {
             try
             {
-                Console.WriteLine($"=== EDIT POST DEBUG ===");
-                Console.WriteLine($"Route ID: {id}");
-                Console.WriteLine($"Model.Id: {model.Id}");
-                Console.WriteLine($"Brand: '{model.Brand}'");
-                Console.WriteLine($"Model: '{model.Model}'");
-                Console.WriteLine($"Year: {model.Year}");
-                Console.WriteLine($"LicensePlate: '{model.LicensePlate}'");
-                Console.WriteLine($"PricePerDay: {model.PricePerDay}");
+                Console.WriteLine($"=== HYBRID EDIT DEBUG: ID = {id} ===");
+                Console.WriteLine($"Model.Id: {model?.Id ?? 0}");
 
-                // Fix: If model.Id is 0, use route id
-                if (model.Id == 0)
+                // If model binding failed, try manual extraction
+                if (model == null || model.Id == 0 ||
+                    (string.IsNullOrEmpty(model.Brand) && string.IsNullOrEmpty(model.Model)))
                 {
-                    Console.WriteLine($"Model.Id was 0, setting to route id: {id}");
-                    model.Id = id;
+                    Console.WriteLine("Model binding failed for edit, trying manual extraction...");
+
+                    model = new CarViewModel
+                    {
+                        Id = id, // Use route parameter
+                        Brand = Request.Form["Brand"].ToString(),
+                        Model = Request.Form["Model"].ToString(),
+                        LicensePlate = Request.Form["LicensePlate"].ToString(),
+                        ImageUrl = Request.Form["ImageUrl"].ToString()
+                    };
+
+                    // Parse numbers manually
+                    if (int.TryParse(Request.Form["Year"], out int year))
+                        model.Year = year;
+
+                    if (int.TryParse(Request.Form["PricePerDay"], out int price))
+                        model.PricePerDay = price;
                 }
 
                 if (id != model.Id)
                 {
                     Console.WriteLine($"ID mismatch: route={id}, model={model.Id}");
-                    TempData["Error"] = $"Invalid car ID. Route: {id}, Model: {model.Id}";
-                    return RedirectToAction(nameof(Index));
+                    model.Id = id; // Fix ID mismatch
                 }
 
-                if (!ModelState.IsValid)
+                // Manual validation
+                var errors = new List<string>();
+
+                if (string.IsNullOrWhiteSpace(model.Brand))
+                    errors.Add("Brand is required");
+
+                if (string.IsNullOrWhiteSpace(model.Model))
+                    errors.Add("Model is required");
+
+                if (string.IsNullOrWhiteSpace(model.LicensePlate))
+                    errors.Add("License plate is required");
+
+                if (model.Year < 1900 || model.Year > 2030)
+                    errors.Add("Year must be between 1900 and 2030");
+
+                if (model.PricePerDay <= 0)
+                    errors.Add("Price per day must be greater than 0");
+
+                if (errors.Any())
                 {
-                    Console.WriteLine("=== EDIT MODEL VALIDATION ERRORS ===");
-                    foreach (var kvp in ModelState)
+                    foreach (var error in errors)
                     {
-                        Console.WriteLine($"Field: {kvp.Key}");
-                        foreach (var error in kvp.Value.Errors)
-                        {
-                            Console.WriteLine($"  Error: {error.ErrorMessage}");
-                        }
+                        ModelState.AddModelError("", error);
                     }
                     return View(model);
                 }
@@ -282,66 +239,66 @@ namespace YourProjectName.Controllers
                 var car = await _context.Cars.FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted);
                 if (car == null)
                 {
-                    Console.WriteLine($"Car with ID {id} not found in database");
-                    TempData["Error"] = "Car not found.";
-                    return RedirectToAction(nameof(Index));
+                    return NotFound();
                 }
 
-                Console.WriteLine($"Found car in DB: {car.Brand} {car.Model}");
+                Console.WriteLine($"Updating car: {model.Brand} {model.Model}");
 
-                // Update car properties
-                car.Brand = model.Brand;
-                car.Model = model.Model;
+                car.Brand = model.Brand.Trim();
+                car.Model = model.Model.Trim();
                 car.Year = model.Year;
-                car.LicensePlate = model.LicensePlate;
+                car.LicensePlate = model.LicensePlate.Trim();
                 car.PricePerDay = model.PricePerDay;
-                car.ImageUrl = model.ImageUrl;
+                car.ImageUrl = string.IsNullOrWhiteSpace(model.ImageUrl) ? null : model.ImageUrl.Trim();
 
                 _context.Cars.Update(car);
-                var changes = await _context.SaveChangesAsync();
+                await _context.SaveChangesAsync();
 
-                Console.WriteLine($"Update SaveChanges returned: {changes}");
+                Console.WriteLine($"Car updated successfully");
 
                 TempData["Success"] = $"Car {car.Brand} {car.Model} updated successfully!";
                 return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Edit POST Exception: {ex.Message}");
-                Console.WriteLine($"Stack: {ex.StackTrace}");
+                Console.WriteLine($"Edit Exception: {ex.Message}");
                 TempData["Error"] = $"Error updating car: {ex.Message}";
-                return View(model);
+                return View(model ?? new CarViewModel { Id = id });
             }
         }
 
 
-        // GET: Car/Delete/5
+        // GET: Car/Delete/1
         public async Task<IActionResult> Delete(int id)
         {
-            var car = await _context.Cars.FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted);
+            var car = await _context.Cars
+                .FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted);
+
             if (car == null)
             {
-                TempData["Error"] = "Car not found.";
-                return RedirectToAction(nameof(Index));
+                return NotFound();
             }
+
             return View(car);
         }
 
-        // POST: Car/Delete/5
+        // POST: Car/Delete/1
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             try
             {
-                var car = await _context.Cars.FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted);
+                var car = await _context.Cars
+                    .FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted);
+
                 if (car != null)
                 {
-                    car.IsDeleted = true;
+                    car.IsDeleted = true; // Soft delete
                     _context.Cars.Update(car);
                     await _context.SaveChangesAsync();
 
-                    TempData["Success"] = "Car deleted successfully!";
+                    TempData["Success"] = $"Car {car.Brand} {car.Model} deleted successfully!";
                 }
                 else
                 {
@@ -350,7 +307,8 @@ namespace YourProjectName.Controllers
             }
             catch (Exception ex)
             {
-                TempData["Error"] = $"Error deleting car: {ex.Message}";
+                _logger.LogError(ex, "Error deleting car with ID {CarId}", id);
+                TempData["Error"] = "An error occurred while deleting the car.";
             }
 
             return RedirectToAction(nameof(Index));

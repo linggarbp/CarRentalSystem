@@ -43,14 +43,12 @@ namespace CarRentalSystem.Controllers
                     var user = await _userManager.FindByEmailAsync(model.Email);
                     var roles = await _userManager.GetRolesAsync(user!);
 
-                    // CHANGED: Always redirect to Home/Index unless there's a return URL
                     if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
                     {
                         return Redirect(returnUrl);
                     }
                     else
                     {
-                        // Always go to Home/Index regardless of role
                         return RedirectToAction("Index", "Home");
                     }
                 }

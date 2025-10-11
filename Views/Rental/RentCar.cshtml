@@ -14,14 +14,14 @@
                     <input asp-for="CarId" type="hidden" />
                     <input asp-for="CarInfo" type="hidden" />
                     <input asp-for="PricePerDay" type="hidden" />
-                    
+
                     <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-                    
+
                     <div class="alert alert-info">
                         <strong>Car Details:</strong> @Model.CarInfo<br>
-                        <strong>Price per Day:</strong> $@Model.PricePerDay
+                        <strong>Price per Day:</strong> Rp @Model.PricePerDay.ToString("N0")
                     </div>
-                    
+
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group mb-3">
@@ -38,17 +38,24 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="card mb-3" id="priceCalculation" style="display: none;">
-                        <div class="card-body">
+                        <div class="card-body bg-light">
                             <h5>Rental Summary</h5>
-                            <p><strong>Total Days:</strong> <span id="totalDays">0</span> days</p>
-                            <p><strong>Total Price:</strong> $<span id="totalPrice">0.00</span></p>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Price per Day:</strong> Rp @Model.PricePerDay.ToString("N0")</p>
+                                    <p><strong>Total Days:</strong> <span id="totalDays">0</span> days</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p class="fs-5"><strong>Total Price:</strong> <span class="text-primary">Rp <span id="totalPrice">0</span></span></p>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    
+
                     <div class="form-group">
-                        <button type="submit" class="btn btn-primary" id="rentButton">
+                        <button type="submit" class="btn btn-primary btn-lg" id="rentButton">
                             <i class="fas fa-car"></i> Rent This Car
                         </button>
                         <a asp-controller="Home" asp-action="Index" class="btn btn-secondary">
@@ -62,7 +69,9 @@
 </div>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
     <script>
         $(document).ready(function() {
             // Set minimum date to tomorrow
@@ -70,17 +79,17 @@
             tomorrow.setDate(tomorrow.getDate() + 1);
             var tomorrowString = tomorrow.toISOString().split('T')[0];
             $('#startDate').attr('min', tomorrowString);
-            
+
             // Calculate price when dates change
             $('#startDate, #endDate').change(function() {
                 calculatePrice();
             });
-            
+
             function calculatePrice() {
                 var startDate = $('#startDate').val();
                 var endDate = $('#endDate').val();
                 var carId = @Model.CarId;
-                
+
                 if (startDate && endDate && startDate < endDate) {
                     $.ajax({
                         url: '@Url.Action("CalculatePrice", "Rental")',
@@ -93,29 +102,38 @@
                         success: function(response) {
                             if (response.success) {
                                 $('#totalDays').text(response.totalDays);
-                                $('#totalPrice').text(response.totalPrice.toFixed(2));
+                                $('#totalPrice').text(response.totalPrice.toLocaleString('id-ID'));
                                 $('#priceCalculation').show();
+                                $('#rentButton').prop('disabled', false);
                             }
+                        },
+                        error: function() {
+                            $('#priceCalculation').hide();
+                            $('#rentButton').prop('disabled', true);
                         }
                     });
                 } else {
                     $('#priceCalculation').hide();
+                    $('#rentButton').prop('disabled', true);
                 }
             }
-            
+
             // Auto-set end date when start date is selected
             $('#startDate').change(function() {
                 var startDate = new Date($(this).val());
                 var endDate = new Date(startDate);
                 endDate.setDate(endDate.getDate() + 1);
                 var endDateString = endDate.toISOString().split('T')[0];
-                
+
                 $('#endDate').attr('min', endDateString);
                 if (!$('#endDate').val() || $('#endDate').val() <= $(this).val()) {
                     $('#endDate').val(endDateString);
                     calculatePrice();
                 }
             });
+
+            // Initial calculation
+            calculatePrice();
         });
     </script>
 }
