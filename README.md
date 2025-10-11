@@ -3,7 +3,7 @@ How to use this web app?
 "DefaultConnection": "Server=LAPTOP-NSUAR96P;Database=CarRentalSystemDb;Integrated Security=true;MultipleActiveResultSets=true;Encrypt=true;TrustServerCertificate=true"
 
 2. Open Package Manager Console
-Enter -> Add-Migration then Update-Database 
+Enter -> Update-Database 
 
 3. Open SSMS and Run Query
 -- First, get the admin user ID (jika ingin buat sample rental)
