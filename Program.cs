@@ -59,7 +59,6 @@ builder.Services.AddScoped<IReportService, ReportService>();
 // Services
 builder.Services.AddScoped<IRentalService, RentalService>();
 
-// Add to Program.cs
 builder.Services.AddHsts(options =>
 {
     options.Preload = true;
